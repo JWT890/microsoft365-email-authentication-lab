@@ -262,3 +262,8 @@ Then go back to the _dmarc policy in Cloudlare and edit it back to p=quarantine.
 nslookup -type=TXT _dmarc.jon-maillab.org 1.1.1.1 
 nslookup -type=TXT _dmarc.jon-maillab.org 8.8.8.8 
 After verifying it says quarantine, its time to go to Alice and send a email to the gmail to test if it works now.  
+After it sent, it went to the spam folder and when clicking on show the original: 
+![Email](./images/post_reject_restore_check_redacted.png) 
+It says pass for SPF, DKIM, and DMARC and confirms that p=quarantine does work. Next is to run a python dmarc parser after the dmarc report comes in tomorrow. Something to follow that is useful is the runbook markdown file in runbook folder that Claude made for future cases.
+
+# DMARC parser
