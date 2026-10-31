@@ -12,7 +12,7 @@ TARGETS  = [my_gmail, "bob@jon-maillab.org"]   # your own mailboxes only
 msg = EmailMessage()
 msg["From"] = f"Alice <{SENDER}>"
 msg["To"] = ", ".join(TARGETS)
-msg["Subject"] = "Unauthorized sender test 2 (quarantine)"
+msg["Subject"] = "Unauthorized sender test 3 (reject)"
 msg.set_content("Lab test: my own domain, sent through a third-party relay not in my SPF/DKIM.")
 
 with smtplib.SMTP("mail.smtp2go.com", 587, timeout=30) as s:

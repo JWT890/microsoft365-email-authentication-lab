@@ -244,3 +244,21 @@ And after clicking on it:
 What can be seen from looking at the above image is that the reason for the quarantine is because of phishing with the detection logic saying the DMARC is spoofed and only allows one per policy.  
 
 Next test is to do p=reject in Cloudflare.  
+With the next test, go the _dmarc in Cloudflare and change the p= to p=reject and add pct=100 and save it then run two nslookups: 
+nslookup -type=TXT _dmarc.jon-maillab.org 1.1.1.1 
+nslookup -type=TXT _dmarc.jon-maillab.org 8.8.8.8 
+And see the changes of p=reject and pct=100 
+Then in the spoof_test.py, change the subject to Unauthorized sender test 3 (reject) and run with python spoof_test.py. After running, check the gmail that was used in spam and see no updated email sent, along with both Outlook emails. First thing to check would be the SMTP2GO side by going to Reports -> Activity and see the results: 
+![Log](./images/log.png)  
+Then click on the top email one and see this: 
+![Result14](./images/test3_reject_gmail_smtp2go_redacted.png) 
+This shows that SMTP2GO processed it around 3:30:35 PM and the next second was blocked with the message saying that mail from the email listed is not accepted. 
+Then go to message trace and check the newer entries: 
+![Reject](./images/reject.png)  
+And 
+![Reject1](./images/test3_reject_ndr_redacted.png)  
+From looking over both, the one with bob as the receiver shows that access was denied and not sent because of the policy was that edited in Cloudflare. 
+Then go back to the _dmarc policy in Cloudlare and edit it back to p=quarantine. After changing it back run once again to verify: 
+nslookup -type=TXT _dmarc.jon-maillab.org 1.1.1.1 
+nslookup -type=TXT _dmarc.jon-maillab.org 8.8.8.8 
+After verifying it says quarantine, its time to go to Alice and send a email to the gmail to test if it works now.  
