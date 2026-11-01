@@ -267,3 +267,6 @@ After it sent, it went to the spam folder and when clicking on show the original
 It says pass for SPF, DKIM, and DMARC and confirms that p=quarantine does work. Next is to run a python dmarc parser after the dmarc report comes in tomorrow. Something to follow that is useful is the runbook markdown file in runbook folder that Claude made for future cases.
 
 # DMARC parser
+After generating a parser with Claude after getting the reports, I scanned the two reports that were made and got this output:  
+![Parser](./images/parser_output_redacted.png)  
+Looking over the results, from yesterday, shows the actions for when dmarc was sent to p=quarantine and p=reject with each match. This shows that the parser showed the correct results from the reports
