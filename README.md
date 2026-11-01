@@ -1,4 +1,4 @@
-# email-security-lab
+# microsoft365-email-security-lab
 
 A hands-on lab for SPF, DKIM and DMARC on a Microsoft 365 tenant with a custom domain. I set up authentication, broke each mechanism on purpose, sent forged mail from an unauthorized relay, and tested what Google and Microsoft did with it under three DMARC policies. Everything below is backed by screenshots in images/.
 
