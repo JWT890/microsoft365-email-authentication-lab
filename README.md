@@ -91,7 +91,7 @@ Then go back to 365 and click on verify:
 Choose the Add your own DNS option and get to the Add DNS records screen and since I don't have the Business Basic Standard trial I'll have to get the trial for it to use Exchange so hit continue and add. Shortly after doing this I got the trial. Then assign the license to the admin user and create 2 users with the domain bought and the licenses.    
 ![Users](./images/users.png)    
 And with license added, go back to Settings -> Domains and click on the Cloudflare domain and when doing adding the DNS option, the Exchange information will pop up and finish the setup for it and it should say healthy. 
-Then in Cloudflare for DNS, add several DNS records for information that was created for Exchange and enter it into Cloudflare with the first one as an MX with the MS value, second as a TXT with the v=spf info, third as CNAME with it named autodiscover with the content of autodiscover.outlook.com, and the fourth one named as _dmarc with the content having v=DMARC1; p=none rua=mailto:alice@jonmaillab.org; fo=1 and then do nslookups on them all to verify by typing: 
+Then in Cloudflare for DNS, add several DNS records for information that was created for Exchange and enter it into Cloudflare with the first one as an MX with the MS value, second as a TXT with the v=spf info, third as CNAME with it named autodiscover with the content of autodiscover.outlook.com, and the fourth one named as _dmarc with the content having v=DMARC1; p=none rua=mailto:alice@jon-maillab.org; fo=1 and then do nslookups on them all to verify by typing: 
 nslookup -type=MX jon-maillab.org 1.1.1.1   
 nslookup -type=TXT jon-maillab.org 1.1.1.1
 nslookup -type=TXT _dmarc.jon-maillab.org 1.1.1.1   
@@ -284,7 +284,7 @@ And in Gmail:
 ![Result12](./images/gmail_headers_redacted.png)  
 And for Outlook:  
 ![Outlook1](./images/bob_headers_redacted.png)  
-What this shows is that a policy might be set up for honoring DMARC records and only acts when the policy is set to p=quarantine or reject so its most likely set to p=none
+Microsoft's Honor DMARC setting only acts on p=quarantine or p=reject, so at p=none the message was delivered. 
 
 Next test will be to test with quarantine.  
 First is to check Bob's inbox for the email that was sent over there and check the details for it from this:  
