@@ -1,6 +1,70 @@
 # email-security-lab
 
-Email security is vital for making sure emails are coming from the right place and good senders based off secure settings. SPF makes sure which mail servers are authorized, DKIM adds a signature so that systems can validate the domain's public key, while DMARC makes sure both are aligned and specifies how each one should handle failures and reporting. 
+A hands-on lab for SPF, DKIM and DMARC on a Microsoft 365 tenant with a custom domain. I set up authentication, broke each mechanism on purpose, sent forged mail from an unauthorized relay, and tested what Google and Microsoft did with it under three DMARC policies. Everything below is backed by screenshots in images/.
+
+Environment: Microsoft 365 Business Standard trial (Exchange Online), domain jon-maillab.org with DNS at Cloudflare, SMTP2GO as the unauthorized relay, Gmail as an external receiver.
+
+Key findings
+
+The same forged message (SPF and DKIM pass for the relay's own domain, neither aligned with the From domain) under three DMARC policies. One message per policy, in a trial tenant with default settings, so treat these as observations, not general rules.
+
+_dmarc policy	Gmail	Microsoft 365 (Bob)	Evidence
+p=none	Inbox	Inbox, compauth=fail reason=601	Gmail, Bob
+p=quarantine	Spam, dis=QUARANTINE	Quarantined, detection technology Spoof DMARC	Gmail, Quarantine entry
+p=reject	Refused during SMTP: 550 5.7.26	Not delivered: 550 5.7.509	SMTP2GO log, NDR
+
+Control: legitimate mail from Alice through Microsoft 365 to Gmail passed SPF, DKIM and DMARC, all aligned, under p=quarantine (header).
+
+What I learned
+
+Pass is not alignment. The forged message passed SPF and DKIM, both for the relay's domain. DMARC failed because neither matched the From domain.
+p=none reports but doesn't protect. The forged message reached an inbox. Microsoft recorded the failure and did not act on it.
+Enforcement changed the outcome, not the authentication results. Only the published policy changed between tests.
+Rejection notices go to the return path, not the From address. The p=reject bounce went to the relay's bounce address, so the impersonated user would never see it.
+Two mechanisms are safer than one. With SPF deliberately broken, DKIM kept DMARC passing (SPF break test).
+Read the receiver's own header line. I first misread an ARC line as a DKIM pass, and the DMARC report caught the mistake (see the baseline section).
+Repository layout
+Path	Contents
+images/	Redacted screenshots used as evidence
+dmarc-reports/	DMARC aggregate report material
+runbook/	Troubleshooting runbook with decision tree and NDR code table
+parser.py	DMARC aggregate report parser (python parser.py <files or folders> [--fail-only] [--csv out.csv])
+spoof_test.py	Sends the forged test message through SMTP2GO
+
+Raw reports and unredacted headers are kept out of the repo.
+
+Tools and AI assistance
+
+I drafted the runbook and parser with an AI assistant, then ran and checked them against my own reports. The parser output matched the four test messages in Google's reports. The setup and test results are my own.
+
+SMTP2GO setup for the spoof test
+
+Set the credentials without putting the password in your shell history:
+
+bash
+read -rp  "SMTP2GO username: " SMTP2GO_USER
+read -rsp "SMTP2GO password: " SMTP2GO_PASS; echo
+export SMTP2GO_USER SMTP2GO_PASS
+export MY_GMAIL="you@gmail.com"
+
+Check they are set (expect: set set set)
+echo ${SMTP2GO_USER:+set} ${SMTP2GO_PASS:+set} ${MY_GMAIL:+set}
+
+Make sure spoof_test.py reads the same three variable names. Send test mail only to mailboxes you own.
+
+Scope and limits
+One message per policy, trial tenant, default anti-phishing settings.
+Not tested: subdomain policy (sp=) with a different value, pct below 100 over many messages, forwarding and mailing lists, multiple third-party senders, customized spoof-intelligence settings.
+Microsoft sent no aggregate report for the spoofed messages that I received; I did not investigate why.
+What I'd do in production
+Inventory every system that sends as the domain before moving past p=none.
+Give each third-party sender its own aligned DKIM signature and return-path domain.
+Move up in steps: none, then quarantine at a low pct, then reject, reading reports between steps.
+Send reports to a monitored address or a reporting service, and alert on new failing sources.
+Keep an owner and a rollback value for every DNS change.
+Cleanup
+Rotate or delete the SMTP2GO user when testing ends.
+Cancel the Microsoft 365 trial, or note the renewal date, and decide on domain auto-renew. Gather message traces and headers first, since they can't be recovered afterward.
 
 # Setup
 After setting up a Microsoft 365 domain, go to Settings -> Domains and get here:    
