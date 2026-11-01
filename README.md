@@ -91,11 +91,11 @@ Then go back to 365 and click on verify:
 Choose the Add your own DNS option and get to the Add DNS records screen and since I don't have the Business Basic Standard trial I'll have to get the trial for it to use Exchange so hit continue and add. Shortly after doing this I got the trial. Then assign the license to the admin user and create 2 users with the domain bought and the licenses.    
 ![Users](./images/users.png)    
 And with license added, go back to Settings -> Domains and click on the Cloudflare domain and when doing adding the DNS option, the Exchange information will pop up and finish the setup for it and it should say healthy. 
-Then in Cloudflare for DNS, add several DNS records for information that was created for Exchange and enter it into Cloudflare with the first one as an MX with the MS valeu, second as a TXT with the v=spf info, third as CNAME with it named autodiscover with the content of autodiscover.outlook.com, and the fourth one named as _dmarc with the content having v=DMARC1; p=none rua=mailto:alice@jonmaillab.org; fo=1 and then do nslookups on them all to verify by typing: 
-nslookup -type-MX jon-maillab.org 1.1.1.1   
+Then in Cloudflare for DNS, add several DNS records for information that was created for Exchange and enter it into Cloudflare with the first one as an MX with the MS value, second as a TXT with the v=spf info, third as CNAME with it named autodiscover with the content of autodiscover.outlook.com, and the fourth one named as _dmarc with the content having v=DMARC1; p=none rua=mailto:alice@jonmaillab.org; fo=1 and then do nslookups on them all to verify by typing: 
+nslookup -type=MX jon-maillab.org 1.1.1.1   
 nslookup -type=TXT jon-maillab.org 1.1.1.1
 nslookup -type=TXT _dmarc.jon-maillab.org 1.1.1.1   
-nslookup -type-MX jon-maillab.org 1.1.1.1   
+nslookup -type=MX jon-maillab.org 1.1.1.1   
 nslookup -type=CNAME autodiscover.jon-maillab.org 1.1.1.1   
 Then go to one of the user accounts, create a password for it, then sign into it, set up MFA and get into email like so:    
 ![Outlook](./images/outlook.png)    
@@ -105,7 +105,7 @@ Then in Gmail, click on the three dots in the right corner and click on show ori
 ![Email1](./images/01-baseline-all-pass-redacted.png)   
 Then I sent a reply to Alice by saying hello i think and the report came a few hours later: 
 ![Report](./images/02-dmarc-report-google-redacted.png) 
-And this can also be seen in the dmarc report section. From looking over it seems that a few edits must be made since DKIM shows as failed since SPF and DMARC passed with no DKIM signature yet. So go to Microsoft Defender -> Email & Collaboration -> Policies & rules -> Threat Policies -> Email Authentication settings -> DKIM and see that it faild to load. Did some troubleshooting and what occured with Claude: 
+And this can also be seen in the dmarc report section. From looking over it seems that a few edits must be made since DKIM shows as failed since SPF and DMARC passed with no DKIM signature yet. So go to Microsoft Defender -> Email & Collaboration -> Policies & rules -> Threat Policies -> Email Authentication settings -> DKIM and see that it failed to load. Did some troubleshooting and what occured with Claude: 
 1. Environment
 Item	Choice
 Domain	jon-maillab.org (registered at Cloudflare Registrar)
@@ -234,18 +234,18 @@ AFter waiting a day or so, the aggregator shows this:
 One message from Microsoft's outbound infrastructure to another outlook account with SPF pass, from, DKIM for selector1 and no disposition. Matched header at send time with Microsoft's report format adds envelope_to, envelope_From, and SPF scope which Google doesn't have.  
 
 # SPF Failure Test 
-First lets start by running nslookup -type=TXT jon-maillab.org 1.1.1.1 and should include the line v=spfl include:spf.protection.outlook.com -all.  
+First lets start by running nslookup -type=TXT jon-maillab.org 1.1.1.1 and should include the line v=spf1  include:spf.protection.outlook.com -all.  
 Then go into Cloudflare and edit the TXT record with spfl in it to just v=spf1 -all. After saving, wait a few minutes and run:  
-nslookup -type=TXT jon-maillab.org 1.1.1.1 and nslookup -type=TXT jon-maillab.org 8.8.8.8 which should show as blanks.  
+nslookup -type=TXT jon-maillab.org 1.1.1.1 and nslookup -type=TXT jon-maillab.org 8.8.8.8 which should show the MS= data from Cloudflare and v=spf1 -all.   
 Then send an email in Outlook after this change, with the email titled SPF break test and send it.  
 ![Result3](./images/11-spf-fail-dmarc-pass-redacted.png)  
 With the change to v=spf1 -all, it shows that spf failed and when fixed back in Cloudflare: 
 ![Result4](./images/12-spf-restored-pass-redacted.png)  
-The fix should also be seen when running nslookup -type=TXT jon-maillab.org 1.1.1.1 with v=spfl restored. 
+The fix should also be seen when running nslookup -type=TXT jon-maillab.org 1.1.1.1 with v=spf1 restored. 
 
 # DKIM break test
 For this, something to remember is that if CNAME disappers, those that receive emails will still see a signature but no key. Before breaking run nslookup -type=CNAME selector1._domainkey.jon-maillab.org 1.1.1.1 which will show the selector1 and domain key for the domain. 
-Then go into into Cloudflare and delete the selecto1 key. Then after a few minutes run: 
+Then go into into Cloudflare and delete the selector1 key. Then after a few minutes run: 
 nslookup -type=CNAME selector1._domainkey.jon-maillab.org 1.1.1.1 
 nslookup -type=CNAME selector1._domainkey.jon-maillab.org 8.8.8.8 
 In which the output should say that 1.1.1.1 and dns.google can't find selector1 and that its non-existent.  
@@ -264,7 +264,7 @@ After looking at the DMARC report from this morning:
 These three pictures show the messages that were sent with at least one pass that is aligned and each failure appears. 
 
 # Spoof test
-Start off by running Test-NetConnection gmail-smtp-in.1.google.com -Port 25 which should show the tcp side failed but ping worked. Solution was to turn phone hotspot on and run it again:  
+Start off by running Test-NetConnection gmail-smtp-in.l.google.com -Port 25 which should show the tcp side failed but ping worked. Solution was to turn phone hotspot on and run it again:  
 ![Result11](./images/18-port25-open-hotspot-redacted.png) 
 Something to also do before the test is to create an account with SMTP2GO to make things easier. I created an account with the alice email and was able to get signed in. 
 Then go to Sending -> SMTP Users and get here:  
@@ -301,11 +301,11 @@ From this image after running the script it shows SPF and DKIM as still passing 
 ![Sent](./images/alice_to_gmail_dmarc_pass_redacted.png)  
 From this screenshot, it has p=Quarantine on it and is aligned with SPF. Since Bob's side hasn't been done yet or checked. Go to Defender -> Email & Collaboration -> Exchange Message Trace and click on Start a Trace with the alice email as the sender and bob as the recipient with a date time range of today, Halloween, and UTC time of 17:00 and 18:00 and hit search and notice this: 
 ![Check](./images/check.png)  
-This shows the image was quarintined and is marked as not yet delievered. To see further click on the quarantine link and get here: 
+This shows the image was quarantined and is marked as not yet delievered. To see further click on the quarantine link and get here: 
 ![Defender](./images/defender.png)  
 And after clicking on it: 
 ![Detail](./images/detail.png)  
-What can be seen from looking at the above image is that the reason for the quarantine is because of phishing with the detection logic saying the DMARC is spoofed and only allows one per policy.  
+What can be seen from looking at the above image shows the reason for the quarantine, phishing with the anti-phishing policy set and the detection tech logic set to Spoof DMARC. 
 
 Next test is to do p=reject in Cloudflare.  
 With the next test, go the _dmarc in Cloudflare and change the p= to p=reject and add pct=100 and save it then run two nslookups: 
@@ -322,13 +322,13 @@ Then go to message trace and check the newer entries:
 And 
 ![Reject1](./images/test3_reject_ndr_redacted.png)  
 From looking over both, the one with bob as the receiver shows that access was denied and not sent because of the policy was that edited in Cloudflare. 
-Then go back to the _dmarc policy in Cloudlare and edit it back to p=quarantine. After changing it back run once again to verify: 
+Then go back to the _dmarc policy in Cloudflare and edit it back to p=quarantine. After changing it back run once again to verify: 
 nslookup -type=TXT _dmarc.jon-maillab.org 1.1.1.1 
 nslookup -type=TXT _dmarc.jon-maillab.org 8.8.8.8 
 After verifying it says quarantine, its time to go to Alice and send a email to the gmail to test if it works now.  
 After it sent, it went to the spam folder and when clicking on show the original: 
 ![Email](./images/post_reject_restore_check_redacted.png) 
-It says pass for SPF, DKIM, and DMARC and confirms that p=quarantine does work. Next is to run a python dmarc parser after the dmarc report comes in tomorrow. Something to follow that is useful is the runbook markdown file in runbook folder that Claude made for future cases.
+From looking over the image, the legit message passed DMARC under p=quarantine so enforcement didn't break any real mail sent. Next is to run a python dmarc parser after the dmarc report comes in tomorrow. Something to follow that is useful is the runbook markdown file in runbook folder that Claude made for future cases.
 
 # DMARC parser
 After generating a parser with Claude after getting the reports, I scanned the two reports that were made and got this output:  
